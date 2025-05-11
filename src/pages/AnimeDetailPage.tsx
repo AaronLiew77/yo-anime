@@ -1,25 +1,14 @@
 import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Box,
-  Typography,
-  Button,
-  Grid,
-  Chip,
-  CircularProgress,
-  Paper,
-  Skeleton,
-} from "@mui/material";
+import { Box, Typography, Button, Grid, Chip, Paper, Skeleton } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useAnimeStore } from "../store/animeStore";
 import MainLayout from "../layouts/MainLayout";
-import { useLoading } from "../contexts/LoadingContext";
 
 export default function AnimeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { getAnimeDetails, animeDetails, isLoading, error } = useAnimeStore();
-  const { startNavigationDelay } = useLoading();
 
   useEffect(() => {
     if (id) {
@@ -142,7 +131,7 @@ export default function AnimeDetailPage() {
 
             <Box sx={{ my: 2 }}>
               {animeDetails.genres &&
-                animeDetails.genres.map((genre) => (
+                animeDetails.genres.map((genre: { mal_id: number; name: string }) => (
                   <Chip key={genre.mal_id} label={genre.name} sx={{ mr: 1, mb: 1 }} size='small' />
                 ))}
             </Box>

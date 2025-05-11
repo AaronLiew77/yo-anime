@@ -31,7 +31,8 @@ export const formatDate = (dateStr: string | undefined): string => {
       month: "long",
       day: "numeric",
     });
-  } catch (e) {
+  } catch (e: unknown) {
+    console.error("Error formatting date:", e);
     return "Unknown";
   }
 };

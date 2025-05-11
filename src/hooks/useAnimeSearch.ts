@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAnimeStore } from "../store/animeStore";
 import { useDebounce } from "./useDebounce";
 import { useLoading } from "../contexts/LoadingContext";
@@ -7,14 +7,9 @@ import { useLoading } from "../contexts/LoadingContext";
  * Custom hook for handling anime search functionality with debounce
  *
  * @param initialQuery Initial search query (default: '')
- * @param initialPage Initial page number (default: 1)
  * @param debounceTime Debounce delay in milliseconds (default: 250)
  */
-export function useAnimeSearch(
-  initialQuery: string = "",
-  initialPage: number = 1,
-  debounceTime: number = 250
-) {
+export function useAnimeSearch(initialQuery: string = "", debounceTime: number = 250) {
   const {
     searchAnime,
     searchResults,
@@ -22,6 +17,8 @@ export function useAnimeSearch(
     error,
     searchQuery,
     setSearchQuery,
+    inputValue,
+    setInputValue,
     currentPage,
     setCurrentPage,
     getTopAnime,
@@ -29,30 +26,61 @@ export function useAnimeSearch(
 
   const { startNavigationDelay, setIsNavigating } = useLoading();
 
-  const [previousSearchTerm, setPreviousSearchTerm] = useState("");
-  const [inputValue, setInputValue] = useState(initialQuery || searchQuery);
+  // Add a state to track if a search operation is in progress
+  const [isSearchOperation, setIsSearchOperation] = useState(false);
+  // Add state to track if special characters were sanitized
+  const [specialCharsSanitized, setSpecialCharsSanitized] = useState(false);
+
+  const previousSearchTerm = useRef(searchQuery);
   const debouncedSearchTerm = useDebounce(inputValue, debounceTime);
 
   // Track if a page change is in progress
   const pageChangeInProgress = useRef(false);
 
+  // Initialize input value if needed
+  useEffect(() => {
+    // Explicit check for empty string, so initialQuery="0" works correctly
+    if (initialQuery !== "" && inputValue === "") {
+      setInputValue(initialQuery);
+    }
+  }, [initialQuery, inputValue, setInputValue]);
+
   // Handle search when debounced term changes
   useEffect(() => {
     const performSearch = async () => {
       // Only apply loading delay if the search term changed (not on initial load)
-      if (previousSearchTerm && debouncedSearchTerm !== previousSearchTerm) {
+      if (previousSearchTerm.current && debouncedSearchTerm !== previousSearchTerm.current) {
         await startNavigationDelay();
       }
 
-      if (debouncedSearchTerm) {
+      console.log(
+        "Debounced search term:",
+        debouncedSearchTerm,
+        "Type:",
+        typeof debouncedSearchTerm
+      );
+
+      if (debouncedSearchTerm !== "") {
+        console.log("Searching for:", debouncedSearchTerm);
+        // Check if the search term contains special characters
+        const problematicChars = /[\\[\]{}()<>^$|?*+]/g;
+        const hasSpecialChars = problematicChars.test(debouncedSearchTerm);
+        setSpecialCharsSanitized(hasSpecialChars);
+
+        // Set search operation to true before performing a search
+        setIsSearchOperation(true);
         setSearchQuery(debouncedSearchTerm);
-        searchAnime(debouncedSearchTerm, currentPage);
+        await searchAnime(debouncedSearchTerm, currentPage);
       } else {
+        console.log("Empty search, showing top anime");
         setSearchQuery("");
-        getTopAnime(currentPage);
+        // Reset search operation flag when clearing search
+        setIsSearchOperation(false);
+        setSpecialCharsSanitized(false);
+        await getTopAnime(currentPage);
       }
 
-      setPreviousSearchTerm(debouncedSearchTerm);
+      previousSearchTerm.current = debouncedSearchTerm;
     };
 
     performSearch();
@@ -63,7 +91,6 @@ export function useAnimeSearch(
     setSearchQuery,
     getTopAnime,
     startNavigationDelay,
-    previousSearchTerm,
   ]);
 
   // Handle page change with loading delay
@@ -87,14 +114,15 @@ export function useAnimeSearch(
     }
   };
 
+  // Make the search operation state available to the UI
   return {
-    inputValue,
-    setInputValue,
     searchResults,
     isLoading,
     error,
     searchQuery,
     currentPage,
     handlePageChange,
+    isSearchOperation,
+    specialCharsSanitized,
   };
 }

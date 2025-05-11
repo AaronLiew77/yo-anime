@@ -15,7 +15,7 @@ export default function LoadingOverlay() {
 
     // Start a countdown timer based on the actual delay from context
     let timer: number | null = null;
-    let startTime = Date.now();
+    const startTime = Date.now();
     const maxSeconds = currentDelaySeconds;
 
     const updateCountdown = () => {
@@ -54,9 +54,7 @@ export default function LoadingOverlay() {
       }}
     >
       <img src={LoadingAnimation} alt='Loading' style={{ width: "100px", height: "100px" }} />
-      <Typography variant='h6' color='white' sx={{ mt: 2 }}>
-        Loading Anime Data...
-      </Typography>
+
       {countdown !== null && (
         <Typography variant='body1' color='white' sx={{ mt: 1, opacity: 0.8 }}>
           Please wait {countdown} second{countdown === 1 ? "" : "s"}
